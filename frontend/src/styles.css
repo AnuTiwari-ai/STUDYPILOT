@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
@@ -917,3 +918,342 @@ button:disabled {
     align-items: stretch;
   }
 }
+=======
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Arial;
+  background: #f4f7fb;
+  color: #172033;
+}
+button,
+select,
+input {
+  font: inherit;
+}
+button {
+  border: 0;
+  background: #172033;
+  color: white;
+  border-radius: 10px;
+  padding: 10px 15px;
+  font-weight: 750;
+  cursor: pointer;
+}
+button:hover {
+  transform: translateY(-1px);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  transform: none;
+}
+select,
+input {
+  border: 1px solid #dce3ee;
+  border-radius: 9px;
+  padding: 9px;
+  background: #fff;
+  color: #172033;
+}
+.app {
+  max-width: 1200px;
+  margin: auto;
+  padding: 38px 24px;
+}
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 850;
+  opacity: 0.58;
+}
+.hero h1 {
+  font-size: 48px;
+  line-height: 1;
+  margin: 8px 0;
+}
+.hero p {
+  margin: 0;
+  color: #617087;
+}
+.status {
+  background: #e9f8ef;
+  padding: 10px 15px;
+  border-radius: 30px;
+  color: #237344;
+  font-weight: 750;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.stats div,
+.card {
+  background: #fff;
+  border: 1px solid #e3e9f2;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(23, 32, 51, 0.06);
+}
+.stats div {
+  padding: 18px;
+}
+.stats span {
+  display: block;
+  font-size: 12px;
+  color: #7a879a;
+  margin-bottom: 6px;
+}
+.stats strong {
+  font-size: 17px;
+}
+.card {
+  padding: 22px;
+  margin-bottom: 18px;
+}
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+.card h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.cardHead small {
+  display: block;
+  color: #7a879a;
+  margin-top: 5px;
+}
+.agentCard {
+  border-color: #cad7e8;
+}
+.trace {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  background: #f5f8fc;
+  border-radius: 12px;
+  padding: 14px;
+}
+.demoCard {
+  border-color: #cfd9e8;
+}
+.controls {
+  display: grid;
+  grid-template-columns: 1.2fr auto 1.5fr auto 0.6fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.control {
+  display: grid;
+  gap: 6px;
+}
+.control label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #7a879a;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 18px;
+}
+.grid .card {
+  margin-bottom: 0;
+}
+.planRow,
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+.planRow:last-child,
+.row:last-child {
+  border-bottom: 0;
+}
+.planRow span {
+  width: 58px;
+  font-size: 12px;
+  color: #8a95a6;
+}
+.planRow strong {
+  flex: 1;
+}
+.planRow em {
+  font-style: normal;
+  font-weight: 800;
+}
+.row > div:first-child {
+  flex: 1;
+}
+.row small {
+  display: block;
+  font-size: 12px;
+  color: #7a879a;
+  margin-top: 4px;
+}
+.muted {
+  color: #7a879a;
+}
+@media (max-width: 1000px) {
+  .controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .app {
+    padding: 24px 14px;
+  }
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .hero h1 {
+    font-size: 40px;
+  }
+  .controls {
+    grid-template-columns: 1fr;
+  }
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+/* ===== STUDY PROFILE SETUP ===== */
+
+.setupCard{
+  max-width:1000px;
+  margin:20px auto;
+  background:#fff;
+  border:1px solid #e3e9f2;
+  border-radius:20px;
+  box-shadow:0 10px 28px rgba(23,32,51,.06);
+  padding:28px;
+}
+
+.setupGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.setupSection{
+  margin-top:24px;
+  padding-top:20px;
+  border-top:1px solid #edf0f5;
+}
+
+.sectionTitle{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.sectionTitle h3{
+  margin:0;
+  font-size:16px;
+}
+
+.sectionTitle p{
+  margin:4px 0 0;
+  color:#7a879a;
+  font-size:12px;
+}
+
+.taskRow{
+  display:grid;
+  grid-template-columns:1.1fr 1.8fr .7fr .8fr auto;
+  gap:10px;
+  align-items:end;
+  padding:12px;
+  background:#f7f9fc;
+  border:1px solid #e6ebf3;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+
+.taskEditor{
+  display:grid;
+  gap:5px;
+}
+
+.taskEditor label{
+  font-size:10px;
+  font-weight:800;
+  color:#7a879a;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+
+.primaryButton{
+  background:#172033;
+  color:#fff;
+  padding:12px 18px;
+  border-radius:10px;
+  font-weight:800;
+}
+
+.secondaryButton{
+  background:#eef2f7;
+  color:#172033;
+  padding:9px 13px;
+  border-radius:9px;
+  font-weight:750;
+}
+
+.errorBox{
+  background:#fff0f0;
+  border:1px solid #f1caca;
+  color:#a33a3a;
+  padding:12px 14px;
+  border-radius:10px;
+  margin-bottom:15px;
+  font-size:13px;
+}
+
+@media(max-width:800px){
+  .setupGrid{
+    grid-template-columns:1fr;
+  }
+
+  .taskRow{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+@media(max-width:550px){
+  .setupCard{
+    padding:18px;
+  }
+
+  .taskRow{
+    grid-template-columns:1fr;
+  }
+}
+>>>>>>> 78acabb (Add interactive study profile and topic management)

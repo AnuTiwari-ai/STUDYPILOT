@@ -7,460 +7,1063 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 async function api(path, options = {}) {
   const res = await fetch(`${API}${path}`, options);
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || data.error || "Request failed");
+
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || "Request failed");
+  }
+
   return data;
 }
 
-function App() {
+function Setup({ onComplete }) {
+  const [name, setName] = useState("");
+  const [exam, setExam] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [dailyHours, setDailyHours] = useState(4);
+
+  const [subjects, setSubjects] = useState([""]);
+  const [tasks, setTasks] = useState([
+    {
+      subject: "",
+      name: "",
+      difficulty: 3,
+      estimated_hours: 2,
+    },
+  ]);
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  function updateSubject(index, value) {
+    setSubjects((current) =>
+      current.map((item, i) => (i === index ? value : item))
+    );
+  }
+
+  function addSubject() {
+    setSubjects((current) => [...current, ""]);
+  }
+
+  function removeSubject(index) {
+    setSubjects((current) =>
+      current.length === 1
+        ? current
+        : current.filter((_, i) => i !== index)
+    );
+  }
+
+  function updateTask(index, field, value) {
+    setTasks((current) =>
+      current.map((task, i) =>
+        i === index
+          ? {
+              ...task,
+              [field]:
+                field === "difficulty" || field === "estimated_hours"
+                  ? Number(value)
+                  : value,
+            }
+          : task
+      )
+    );
+  }
+
+  function addTask() {
+    setTasks((current) => [
+      ...current,
+      {
+        subject: "",
+        name: "",
+        difficulty: 3,
+        estimated_hours: 2,
+      },
+    ]);
+  }
+
+  function removeTask(index) {
+    setTasks((current) =>
+      current.length === 1
+        ? current
+        : current.filter((_, i) => i !== index)
+    );
+  }
+
+  async function createProfile() {
+    setError("");
+
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
+    if (!exam.trim()) {
+      setError("Please enter your exam or study goal.");
+      return;
+    }
+
+    if (!examDate) {
+      setError("Please select your exam date.");
+      return;
+    }
+
+    if (Number(dailyHours) <= 0) {
+      setError("Daily study hours must be greater than 0.");
+      return;
+    }
+
+    const validTasks = tasks.filter(
+      (task) => task.subject.trim() && task.name.trim()
+    );
+
+    if (!validTasks.length) {
+      setError("Please add at least one study task.");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const result = await api("/setup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          exam: exam.trim(),
+          exam_date: examDate,
+          daily_hours: Number(dailyHours),
+          subjects: subjects
+            .map((subject) => subject.trim())
+            .filter(Boolean),
+          tasks: validTasks,
+        }),
+      });
+
+      onComplete(result);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="app">
+      <header className="hero">
+        <div>
+          <div className="eyebrow">📚 STUDYPILOT · AGENTIC STUDY PLANNER</div>
+          <h1>StudyPilot</h1>
+          <p>
+            Create your study profile and let the AI agent build an adaptive
+            study plan from your actual goals, tasks and progress.
+          </p>
+        </div>
+      </header>
+
+      <section className="card setupCard">
+        <div className="cardHead">
+          <div>
+            <h2>🎯 Create Your Study Profile</h2>
+            <small>
+              Enter your real study information. The agent will use it to
+              generate your plan.
+            </small>
+          </div>
+        </div>
+
+        <div className="setupGrid">
+          <div className="control">
+            <label>Your Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Anu"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="control">
+            <label>Exam / Study Goal</label>
+            <input
+              type="text"
+              placeholder="e.g. JEE 2026"
+              value={exam}
+              onChange={(e) => setExam(e.target.value)}
+            />
+          </div>
+
+          <div className="control">
+            <label>Exam Date</label>
+            <input
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+          </div>
+
+          <div className="control">
+            <label>Daily Study Hours</label>
+            <input
+              type="number"
+              min="0.5"
+              max="24"
+              step="0.5"
+              value={dailyHours}
+              onChange={(e) => setDailyHours(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="setupSection">
+          <div className="sectionTitle">
+            <div>
+              <h3>Subjects</h3>
+              <small>What subjects are you preparing?</small>
+            </div>
+
+            <button type="button" onClick={addSubject}>
+              + Add Subject
+            </button>
+          </div>
+
+          {subjects.map((subject, index) => (
+            <div className="taskRow" key={index}>
+              <input
+                type="text"
+                placeholder="e.g. Mathematics"
+                value={subject}
+                onChange={(e) =>
+                  updateSubject(index, e.target.value)
+                }
+              />
+
+              {subjects.length > 1 && (
+                <button
+                  type="button"
+                  className="secondaryButton"
+                  onClick={() => removeSubject(index)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="setupSection">
+          <div className="sectionTitle">
+            <div>
+              <h3>Study Tasks</h3>
+              <small>
+                Add the actual chapters/topics you need to study.
+              </small>
+            </div>
+
+            <button type="button" onClick={addTask}>
+              + Add Task
+            </button>
+          </div>
+
+          {tasks.map((task, index) => (
+            <div className="taskEditor" key={index}>
+              <input
+                type="text"
+                placeholder="Subject"
+                value={task.subject}
+                onChange={(e) =>
+                  updateTask(index, "subject", e.target.value)
+                }
+              />
+
+              <input
+                type="text"
+                placeholder="Task / Chapter"
+                value={task.name}
+                onChange={(e) =>
+                  updateTask(index, "name", e.target.value)
+                }
+              />
+
+              <select
+                value={task.difficulty}
+                onChange={(e) =>
+                  updateTask(index, "difficulty", e.target.value)
+                }
+              >
+                <option value="1">Difficulty 1</option>
+                <option value="2">Difficulty 2</option>
+                <option value="3">Difficulty 3</option>
+                <option value="4">Difficulty 4</option>
+                <option value="5">Difficulty 5</option>
+              </select>
+
+              <input
+                type="number"
+                min="0.5"
+                step="0.5"
+                placeholder="Hours"
+                value={task.estimated_hours}
+                onChange={(e) =>
+                  updateTask(index, "estimated_hours", e.target.value)
+                }
+              />
+
+              {tasks.length > 1 && (
+                <button
+                  type="button"
+                  className="secondaryButton"
+                  onClick={() => removeTask(index)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {error && <div className="errorBox">{error}</div>}
+
+        <button
+          className="primaryButton"
+          onClick={createProfile}
+          disabled={busy}
+        >
+          {busy ? "Creating Study Profile..." : "Create Study Profile →"}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function Dashboard() {
   const [student, setStudent] = useState(null);
   const [topics, setTopics] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [plan, setPlan] = useState([]);
   const [trace, setTrace] = useState([]);
+
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [message, setMessage] = useState("Loading...");
   const [busy, setBusy] = useState(false);
+
   const [score, setScore] = useState(40);
-  const [selectedTopic, setSelectedTopic] = useState(1);
-  const [selectedSession, setSelectedSession] = useState("");
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const [completion, setCompletion] = useState(0);
+
+  const [selectedTopic, setSelectedTopic] = useState("");
+const [selectedSession, setSelectedSession] = useState("");
+const [activeNav, setActiveNav] = useState("Dashboard");
+const [showAddTopic, setShowAddTopic] = useState(false);
+const [newTopic, setNewTopic] = useState({
+  subject: "",
+  name: "",
+  difficulty: 3,
+  estimated_hours: 2,
+});
 
   async function load() {
     try {
       const [s, t, sub, p, se, tr] = await Promise.all([
-        api("/student"), api("/topics"), api("/subjects"),
-        api("/plan"), api("/sessions"), api("/agent/trace")
-      ]);
-      setStudent(s); setTopics(t); setSubjects(sub.map(x => x.name));
-      setPlan(p.latest_plan?.items || []); setSessions(se); setTrace(tr.trace || []);
-      if (!selectedSession && se.length) setSelectedSession(String(se[0].id));
+  api("/student"),
+  api("/topics"),
+  api("/subjects"),
+  api("/plan"),
+  api("/sessions"),
+  api("/agent/trace"),
+]);
+
+      setStudent(s);
+      setTopics(t);
+      setSubjects(sub.map((x) => x.name));
+      setPlan(p.latest_plan?.items || []);
+      setSessions(se);
+      setTrace(tr.trace || []);
+
+      if (!selectedTopic && t.length) {
+        setSelectedTopic(String(t[0].id));
+      }
+
+      if (!selectedSession && se.length) {
+        setSelectedSession(String(se[0].id));
+      }
+
       setMessage("AI Agent ready");
-    } catch (e) { setMessage(e.message || "Backend not running"); }
+    } catch (e) {
+      setMessage(e.message || "Backend not running");
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+  const topic = topics.find(
+    (t) => String(t.id) === String(selectedTopic)
+  );
+
+  if (topic && Number(topic.estimated_hours) > 0) {
+    const savedCompletion =
+      ((Number(topic.estimated_hours) -
+        Number(topic.remaining_hours)) /
+        Number(topic.estimated_hours)) *
+      100;
+
+    setCompletion(
+      Math.max(0, Math.min(100, Math.round(savedCompletion)))
+    );
+  }
+}, [topics, selectedTopic]);
+
+
+  async function refreshData() {
+    const [s, t, sub, p, se, tr] = await Promise.all([
+      api("/student"),
+      api("/topics"),
+      api("/subjects"),
+      api("/plan"),
+      api("/sessions"),
+      api("/agent/trace"),
+    ]);
+
+    setStudent(s);
+    setTopics(t);
+    setSubjects(sub.map((x) => x.name));
+    setPlan(p.latest_plan?.items || []);
+    setSessions(se);
+    setTrace(tr.trace || []);
+
+    if (!selectedTopic && t.length) {
+      setSelectedTopic(String(t[0].id));
+    }
+  }
 
   async function runAgent() {
     setBusy(true);
+
     try {
-      const r = await api("/agent/run", { method: "POST" });
-      setPlan(r.plan || []); setTrace(r.trace || []); setMessage("Fresh plan generated"); await refreshData();
-    } catch (e) { setMessage(e.message); } finally { setBusy(false); }
+      const r = await api("/agent/run", {
+        method: "POST",
+      });
+
+      setPlan(r.plan || []);
+      setTrace(r.trace || []);
+      setMessage("Fresh personalised plan generated");
+
+      await refreshData();
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+async function addNewTopic() {
+  if (!newTopic.subject.trim() || !newTopic.name.trim()) {
+    setMessage("Enter both subject and topic name");
+    return;
   }
 
-  async function refreshData() {
-    const [p, se, tr] = await Promise.all([api("/plan"), api("/sessions"), api("/agent/trace")]);
-    setPlan(p.latest_plan?.items || []); setSessions(se); setTrace(tr.trace || []);
+  setBusy(true);
+
+  try {
+    const r = await api("/topics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        subject: newTopic.subject.trim(),
+        name: newTopic.name.trim(),
+        difficulty: Number(newTopic.difficulty),
+        estimated_hours: Number(newTopic.estimated_hours),
+      }),
+    });
+
+    setMessage(
+      `${r.topic} added to ${r.subject} · ${r.estimated_hours}h`
+    );
+
+    setNewTopic({
+      subject: "",
+      name: "",
+      difficulty: 3,
+      estimated_hours: 2,
+    });
+
+    setShowAddTopic(false);
+
+    await refreshData();
+  } catch (e) {
+    setMessage(e.message);
+  } finally {
+    setBusy(false);
+  }
+}
+  async function saveProgress() {
+    if (!selectedTopic) {
+      setMessage("Select a topic first");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const r = await api("/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic_id: Number(selectedTopic),
+          completion: Number(completion),
+        }),
+      });
+
+      setMessage(
+        `${r.topic}: ${r.completion}% complete · ${r.remaining_hours}h remaining`
+      );
+
+      await refreshData();
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function createDemoSession() {
+    if (!selectedTopic) {
+      setMessage("Select a topic first");
+      return;
+    }
+
     setBusy(true);
+
     try {
       const r = await api("/sessions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic_id: Number(selectedTopic), session_date: new Date().toISOString().slice(0, 10), duration: 2 })
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic_id: Number(selectedTopic),
+          session_date: new Date().toISOString().slice(0, 10),
+          duration: 2,
+        }),
       });
-      setSelectedSession(String(r.session_id)); setMessage(`Session created for ${r.topic}`); await refreshData();
-    } catch (e) { setMessage(e.message); } finally { setBusy(false); }
+
+      setSelectedSession(String(r.session_id));
+      setMessage(`Session created for ${r.topic}`);
+
+      await refreshData();
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function missSelectedSession() {
-    if (!selectedSession) return setMessage("Create/select a session first");
+    if (!selectedSession) {
+      setMessage("Create/select a session first");
+      return;
+    }
+
     setBusy(true);
+
     try {
-      const r = await api(`/sessions/${selectedSession}/miss`, { method: "POST" });
-      setMessage(`Autonomous replan triggered for ${r.topic}`);
-      setTrace(r.autonomous_replan?.trace || []); setPlan(r.autonomous_replan?.plan || []); await refreshData();
-    } catch (e) { setMessage(e.message); } finally { setBusy(false); }
+      const r = await api(
+        `/sessions/${selectedSession}/miss`,
+        {
+          method: "POST",
+        }
+      );
+
+      setMessage(
+        `Autonomous replan triggered for ${r.topic}`
+      );
+
+      setTrace(
+        r.autonomous_replan?.trace || []
+      );
+
+      setPlan(
+        r.autonomous_replan?.plan || []
+      );
+
+      await refreshData();
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function recordPerformance() {
+    if (!selectedTopic) {
+      setMessage("Select a topic first");
+      return;
+    }
+
     setBusy(true);
+
     try {
-      const r = await api("/performance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic_id: Number(selectedTopic), score: Number(score) })
-      });
-      setMessage(r.adaptive_replan ? `Adaptive replan triggered for ${r.topic}` : `Performance ${r.score}% recorded`);
-      if (r.adaptive_replan) { setTrace(r.adaptive_replan.trace || []); setPlan(r.adaptive_replan.plan || []); }
-      await refreshData();
-    } catch (e) { setMessage(e.message); } finally { setBusy(false); }
+  const r = await api("/performance", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      topic_id: Number(selectedTopic),
+      score: Number(score),
+    }),
+  });
+
+  setMessage(
+    r.adaptive_replan
+      ? `Adaptive replan triggered for ${r.topic}`
+      : `Performance ${r.score}% recorded`
+  );
+
+  if (r.adaptive_replan) {
+    setTrace(r.adaptive_replan.trace || []);
+    setPlan(r.adaptive_replan.plan || []);
   }
 
-  const filtered = useMemo(() => (
-    selectedSubject === "All" ? topics : topics.filter(t => t.subject === selectedSubject)
-  ), [topics, selectedSubject]);
 
-  const totalPlannedHours = useMemo(() => plan.reduce((sum, item) => sum + (item.duration || 0), 0), [plan]);
+      await refreshData();
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const filtered = useMemo(
+    () =>
+      selectedSubject === "All"
+        ? topics
+        : topics.filter(
+            (t) => t.subject === selectedSubject
+          ),
+    [topics, selectedSubject]
+  );
 
   return (
-    <div className="portal-layout">
-      {/* FIXED DARK NAVY SIDEBAR */}
-      <aside className="portal-sidebar">
-        <div className="sidebar-brand">
-          <span className="brand-icon">📚</span>
-          <span className="brand-title">StudyPilot</span>
+    <main className="app">
+      <header className="hero">
+        <div>
+          <div className="eyebrow">
+            📚 STUDYPILOT · FINAL AGENTIC BUILD
+          </div>
+
+          <h1>StudyPilot</h1>
+
+          <p>
+            AI-powered planning that adapts when study
+            sessions are missed or performance changes.
+          </p>
         </div>
 
-        <div className="sidebar-menu">
-          <div className="menu-group">
-            <span className="group-label">OVERVIEW</span>
-            <button
-              className={`menu-item ${activeNav === "Dashboard" ? "active" : ""}`}
-              onClick={() => setActiveNav("Dashboard")}
-            >
-              <span className="menu-icon">📊</span>
-              <span>Dashboard</span>
-            </button>
+        <div className="status">
+          ● {message}
+        </div>
+      </header>
+
+      {student && (
+        <section className="stats">
+          <div>
+            <span>Student</span>
+            <strong>{student.name}</strong>
           </div>
 
-          <div className="menu-group">
-            <span className="group-label">STUDY</span>
-            <button
-              className={`menu-item ${activeNav === "Syllabus" ? "active" : ""}`}
-              onClick={() => setActiveNav("Syllabus")}
-            >
-              <span className="menu-icon">📚</span>
-              <span>Syllabus</span>
-            </button>
-            <button
-              className={`menu-item ${activeNav === "Study Plan" ? "active" : ""}`}
-              onClick={() => setActiveNav("Study Plan")}
-            >
-              <span className="menu-icon">📅</span>
-              <span>Study Plan</span>
-            </button>
-            <button
-              className={`menu-item ${activeNav === "Study Sessions" ? "active" : ""}`}
-              onClick={() => setActiveNav("Study Sessions")}
-            >
-              <span className="menu-icon">⏱</span>
-              <span>Study Sessions</span>
-            </button>
+          <div>
+            <span>Exam / Goal</span>
+            <strong>{student.exam}</strong>
           </div>
 
-          <div className="menu-group">
-            <span className="group-label">PROGRESS</span>
-            <button
-              className={`menu-item ${activeNav === "Progress" ? "active" : ""}`}
-              onClick={() => setActiveNav("Progress")}
-            >
-              <span className="menu-icon">📈</span>
-              <span>Progress</span>
-            </button>
+          <div>
+            <span>Exam Date</span>
+            <strong>{student.exam_date}</strong>
+          </div>
+
+          <div>
+            <span>Daily Hours</span>
+            <strong>{student.daily_hours} h</strong>
+          </div>
+        </section>
+      )}
+
+      <section className="card agentCard">
+        <div className="cardHead">
+          <div>
+            <h2>🤖 Agent Activity</h2>
+            <small>
+              Live decisions from the current student state
+            </small>
+          </div>
+
+          <button
+            onClick={runAgent}
+            disabled={busy}
+          >
+            {busy
+              ? "Working..."
+              : "Run Agent"}
+          </button>
+        </div>
+
+        <div className="trace">
+          {trace.map((item, index) => (
+            <div key={index}>
+              {item}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card demoCard">
+        <div className="cardHead">
+          <div>
+            <h2>⚡ Study Controls</h2>
+            <small>
+              Update your real progress and demonstrate
+              autonomous adaptation.
+            </small>
           </div>
         </div>
-      </aside>
 
-      {/* MAIN CONTENT AREA */}
-      <div className="portal-main">
-        {/* TOP HEADER */}
-        <header className="portal-header">
-          <div className="header-greeting">
-            <h1>Welcome back, {student ? student.name : "Rahul"} 👋</h1>
-            <p>Let's make today's study time count.</p>
+        <div className="controls">
+          <div className="control">
+            <label>Topic</label>
+
+            <select
+              value={selectedTopic}
+              onChange={(e) =>
+                setSelectedTopic(e.target.value)
+              }
+            >
+              {topics.map((topic) => (
+                <option
+                  key={topic.id}
+                  value={topic.id}
+                >
+                  {topic.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="header-right">
-            <div className="status-pill">
-              <span className="status-dot"></span>
-              <span className="status-text">{message}</span>
-            </div>
-            <div className="avatar-circle">
-              <span>{student ? student.name.charAt(0) : "R"}</span>
+          <div className="control score">
+            <label>Actual Progress %</label>
+
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={completion}
+              onChange={(e) =>
+                setCompletion(e.target.value)
+              }
+            />
+          </div>
+
+          <button
+            onClick={saveProgress}
+            disabled={busy}
+          >
+            Save Progress
+          </button>
+
+          <div className="control score">
+            <label>Latest Score</label>
+
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={score}
+              onChange={(e) =>
+                setScore(e.target.value)
+              }
+            />
+          </div>
+
+          <button
+            onClick={recordPerformance}
+            disabled={busy}
+          >
+            Record Performance
+          </button>
+
+          <button
+            onClick={createDemoSession}
+            disabled={busy}
+          >
+            Create Study Session
+          </button>
+
+          <div className="control">
+            <label>Session</label>
+
+            <select
+              value={selectedSession}
+              onChange={(e) =>
+                setSelectedSession(e.target.value)
+              }
+            >
+              <option value="">
+                Select session
+              </option>
+
+              {sessions.map((session) => (
+                <option
+                  key={session.id}
+                  value={session.id}
+                >
+                  #{session.id} · {session.topic_name} ·{" "}
+                  {session.status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={missSelectedSession}
+            disabled={busy || !selectedSession}
+          >
+            Miss Session → Replan
+          </button>
+        </div>
+      </section>
+
+      <div className="grid">
+        <section className="card">
+          <div className="cardHead">
+            <div>
+              <h2>Latest Study Plan</h2>
+
+              <small>
+                Current personalised plan saved in SQLite
+              </small>
             </div>
           </div>
-        </header>
 
-        {/* DASHBOARD CONTENT CONTAINER */}
-        <main className="portal-content">
-          {/* WELCOME / HERO CARD */}
-          <section className="welcome-card">
-            <div className="welcome-left">
-              <div className="welcome-eyebrow">
-                <span>📚 SMART STUDY PLANNER</span>
-              </div>
-              <h2 className="welcome-title">StudyPilot</h2>
-              <p className="welcome-tagline">
-                "Plan smarter. Stay consistent. Adapt your study schedule."
-              </p>
-            </div>
-            <div className="welcome-right">
-              <div className="illustration-wrapper">
-                <img src="/study_hero.jpg" alt="Study Desk" className="illustration-img" />
-              </div>
-            </div>
-          </section>
+          {plan.length ? (
+            plan.map((item, index) => (
+              <div
+                className="planRow"
+                key={index}
+              >
+                <span>
+                  Day {item.day}
+                </span>
 
-          {/* STUDENT OVERVIEW CARDS */}
-          {student && (
-            <section className="overview-grid">
-              <div className="overview-card card-blue">
-                <div className="card-header">
-                  <span className="card-icon">👤</span>
-                  <span className="card-label">STUDENT</span>
-                </div>
-                <strong className="card-value">{student.name}</strong>
-                <span className="card-subtext">Your profile</span>
-                <div className="accent-bar bar-blue"></div>
-              </div>
+                <strong>
+                  {item.topic}
+                </strong>
 
-              <div className="overview-card card-purple">
-                <div className="card-header">
-                  <span className="card-icon">📚</span>
-                  <span className="card-label">EXAM</span>
-                </div>
-                <strong className="card-value">{student.exam}</strong>
-                <span className="card-subtext">Target exam</span>
-                <div className="accent-bar bar-purple"></div>
+                <em>
+                  {item.duration}h
+                </em>
               </div>
-
-              <div className="overview-card card-pink">
-                <div className="card-header">
-                  <span className="card-icon">📅</span>
-                  <span className="card-label">EXAM DATE</span>
-                </div>
-                <strong className="card-value">{student.exam_date}</strong>
-                <span className="card-subtext">Upcoming</span>
-                <div className="accent-bar bar-pink"></div>
-              </div>
-
-              <div className="overview-card card-teal">
-                <div className="card-header">
-                  <span className="card-icon">⏱</span>
-                  <span className="card-label">DAILY HOURS</span>
-                </div>
-                <strong className="card-value">{student.daily_hours} hours</strong>
-                <span className="card-subtext">Daily goal</span>
-                <div className="accent-bar bar-teal"></div>
-              </div>
-            </section>
+            ))
+          ) : (
+            <p className="muted">
+              Run the agent to create a personalised plan.
+            </p>
           )}
+        </section>
 
-          {/* REAL PROGRESS PANEL */}
-          <section className="portal-card progress-panel">
-            <div className="card-title-row">
-              <div>
-                <h3>📈 Study Progress Overview</h3>
-                <small className="section-subtitle">Real-time overview of your curriculum and schedule</small>
-              </div>
+        <section className="card">
+          <div className="cardHead">
+            <div>
+              <h2>Study Tasks</h2>
+
+              <small>
+                Tasks currently used by the agent
+              </small>
+              <button
+  type="button"
+  className="secondaryButton"
+  onClick={() => setShowAddTopic(!showAddTopic)}
+>
+  + Add Topic
+</button>
             </div>
-            <div className="progress-boxes">
-              <div className="p-box">
-                <span className="p-icon">📖</span>
-                <div>
-                  <strong className="p-val">{topics.length}</strong>
-                  <span className="p-lbl">Total Curriculum Topics</span>
-                </div>
-              </div>
-              <div className="p-box">
-                <span className="p-icon">⌛</span>
-                <div>
-                  <strong className="p-val">{totalPlannedHours} hrs</strong>
-                  <span className="p-lbl">Planned Study Time</span>
-                </div>
-              </div>
-              <div className="p-box">
-                <span className="p-icon">📑</span>
-                <div>
-                  <strong className="p-val">{sessions.length}</strong>
-                  <span className="p-lbl">Scheduled Sessions</span>
-                </div>
-              </div>
-            </div>
-          </section>
 
-          {/* MIDDLE GRID: ACTIVITY & ADAPTATION */}
-          <div className="portal-middle-grid">
-            {/* STUDY PLANNING ACTIVITY */}
-            <section className="portal-card activity-card">
-              <div className="card-title-row">
-                <div>
-                  <h3>📊 Study Planning Activity</h3>
-                  <small className="section-subtitle">See how your study plan is created.</small>
-                </div>
-                <button className="btn-run-agent" onClick={runAgent} disabled={busy}>
-                  {busy ? "Working..." : "Run Agent"}
-                </button>
-              </div>
+            <select
+              value={selectedSubject}
+              onChange={(e) =>
+                setSelectedSubject(e.target.value)
+              }
+            >
+              <option>All</option>
 
-              <div className="timeline-box">
-                {trace.length > 0 ? (
-                  <div className="timeline-list">
-                    {trace.map((step, idx) => (
-                      <div key={idx} className="timeline-node">
-                        <div className="node-marker">
-                          <span className="check-icon">✓</span>
-                          {idx < trace.length - 1 && <span className="node-line"></span>}
-                        </div>
-                        <span className="node-text">{step}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="timeline-empty">
-                    <span>✨ Click "Run Agent" to simulate autonomous study planning.</span>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* SMART ADAPTATION */}
-            <section className="portal-card adaptation-card">
-              <div className="card-title-row">
-                <div>
-                  <h3>⚡ Smart Adaptation</h3>
-                  <small className="section-subtitle">Your study plan adjusts when your schedule or performance changes.</small>
-                </div>
-              </div>
-
-              {/* WORKFLOW CARDS */}
-              <div className="workflow-grid">
-                <div className="flow-card flow-missed">
-                  <span className="flow-header">MISSED SESSION</span>
-                  <div className="flow-items">
-                    <span className="flow-badge">📅 Create Study Session</span>
-                    <span className="flow-down">↓</span>
-                    <span className="flow-badge badge-warning">⚠️ Missed Session</span>
-                    <span className="flow-down">↓</span>
-                    <span className="flow-badge badge-success">🔄 Plan Updated</span>
-                  </div>
-                </div>
-
-                <div className="flow-card flow-performance">
-                  <span className="flow-header">PERFORMANCE</span>
-                  <div className="flow-items">
-                    <span className="flow-badge">📝 Record Performance</span>
-                    <span className="flow-down">↓</span>
-                    <span className="flow-badge badge-info">📉 Low Score</span>
-                    <span className="flow-down">↓</span>
-                    <span className="flow-badge badge-success">🔄 Plan Adapted</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* CONTROLS */}
-              <div className="adaptation-controls">
-                <div className="control-block">
-                  <span className="block-label">Session Adaptation</span>
-                  <div className="ctrl-row">
-                    <div className="field">
-                      <label>Topic</label>
-                      <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)}>
-                        {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
-                    <button className="btn-secondary" onClick={createDemoSession} disabled={busy}>
-                      Create Study Session
-                    </button>
-                  </div>
-
-                  <div className="ctrl-row">
-                    <div className="field">
-                      <label>Active Session</label>
-                      <select value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
-                        <option value="">Select session</option>
-                        {sessions.map(s => <option key={s.id} value={s.id}>#{s.id} · {s.topic_name} · {s.status}</option>)}
-                      </select>
-                    </div>
-                    <button className="btn-miss" onClick={missSelectedSession} disabled={busy || !selectedSession}>
-                      Miss Session → Replan
-                    </button>
-                  </div>
-                </div>
-
-                <div className="control-block">
-                  <span className="block-label">Performance Adaptation</span>
-                  <div className="ctrl-row">
-                    <div className="field">
-                      <label>Score (0 - 100)</label>
-                      <input type="number" min="0" max="100" value={score} onChange={e => setScore(e.target.value)} />
-                    </div>
-                    <button className="btn-teal" onClick={recordPerformance} disabled={busy}>
-                      Record Performance
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
+              {subjects.map((subject) => (
+                <option
+                  key={subject}
+                >
+                  {subject}
+                </option>
+              ))}
+            </select>
           </div>
+{showAddTopic && (
+  <div className="setupSection">
+    <div className="setupGrid">
+      <div className="control">
+        <label>Subject</label>
+        <input
+          type="text"
+          placeholder="e.g. Physics"
+          value={newTopic.subject}
+          onChange={(e) =>
+            setNewTopic({
+              ...newTopic,
+              subject: e.target.value,
+            })
+          }
+        />
+      </div>
 
-          {/* BOTTOM GRID: LATEST PLAN & SYLLABUS */}
-          <div className="portal-bottom-grid">
-            {/* LATEST STUDY PLAN */}
-            <section className="portal-card plan-section">
-              <div className="card-title-row">
-                <div>
-                  <h3>📅 Latest Study Plan</h3>
-                  <small className="section-subtitle">Your personalised study schedule</small>
-                </div>
-              </div>
+      <div className="control">
+        <label>Topic / Chapter</label>
+        <input
+          type="text"
+          placeholder="e.g. Optics"
+          value={newTopic.name}
+          onChange={(e) =>
+            setNewTopic({
+              ...newTopic,
+              name: e.target.value,
+            })
+          }
+        />
+      </div>
 
-              <div className="schedule-list">
-                {plan.length ? plan.map((p, i) => (
-                  <div className={`schedule-item schedule-color-${(i % 4) + 1}`} key={i}>
-                    <span className="day-pill">DAY {p.day}</span>
-                    <div className="schedule-details">
-                      <strong className="topic-title">{p.topic}</strong>
-                      <span className="subject-name">Mathematics</span>
-                    </div>
-                    <span className="duration-tag">🕒 {p.duration} {p.duration === 1 ? "hour" : "hours"}</span>
-                  </div>
-                )) : (
-                  <div className="empty-box">
-                    <span>📌 Run the agent to generate your custom study schedule.</span>
-                  </div>
-                )}
-              </div>
-            </section>
+      <div className="control">
+        <label>Difficulty</label>
+        <select
+          value={newTopic.difficulty}
+          onChange={(e) =>
+            setNewTopic({
+              ...newTopic,
+              difficulty: Number(e.target.value),
+            })
+          }
+        >
+          <option value="1">1 — Easy</option>
+          <option value="2">2</option>
+          <option value="3">3 — Medium</option>
+          <option value="4">4</option>
+          <option value="5">5 — Hard</option>
+        </select>
+      </div>
 
-            {/* SYLLABUS */}
-            <section className="portal-card syllabus-section">
-              <div className="card-title-row">
-                <div>
-                  <h3>📚 Syllabus</h3>
-                  <small className="section-subtitle">Topics used by the agent</small>
-                </div>
-                <div className="filter-box">
-                  <select value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
-                    <option>All</option>
-                    {subjects.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="syllabus-list">
-                {filtered.map(t => (
-                  <div className="syllabus-card" key={t.id}>
-                    <div className="syl-header">
-                      <strong className="syl-title">{t.name}</strong>
-                      <span className="syl-subject">{t.subject}</span>
-                    </div>
-                    <div className="syl-meta">
-                      <div className="diff-box">
-                        <span className="diff-label">Difficulty:</span>
-                        <div className="dots-row">
-                          {[1, 2, 3, 4, 5].map(d => (
-                            <span key={d} className={`dot ${d <= t.difficulty ? "filled" : ""}`} />
-                          ))}
-                        </div>
-                      </div>
-                      <span className="remaining-hrs">{t.remaining_hours} hrs remaining</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-        </main>
+      <div className="control">
+        <label>Estimated Hours</label>
+        <input
+          type="number"
+          min="0.5"
+          step="0.5"
+          value={newTopic.estimated_hours}
+          onChange={(e) =>
+            setNewTopic({
+              ...newTopic,
+              estimated_hours: Number(e.target.value),
+            })
+          }
+        />
       </div>
     </div>
+
+    <div style={{ marginTop: "12px" }}>
+      <button
+        type="button"
+        className="primaryButton"
+        onClick={addNewTopic}
+        disabled={busy}
+      >
+        {busy ? "Adding..." : "Add Topic →"}
+      </button>
+    </div>
+  </div>
+)}
+          {filtered.map((topic) => (
+            <div
+              className="row"
+              key={topic.id}
+            >
+              <div>
+                <strong>
+                  {topic.name}
+                </strong>
+
+                <small>
+                  {topic.subject} · Difficulty{" "}
+                  {topic.difficulty}/5 ·{" "}
+                  {topic.remaining_hours}h remaining
+                </small>
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
+    </main>
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+function App() {
+  const [configured, setConfigured] =
+    useState(false);
 
+  const [checking, setChecking] =
+    useState(true);
 
+  useEffect(() => {
+    async function checkProfile() {
+      try {
+        const student = await api("/student");
+
+        const hasRealProfile =
+          student &&
+          student.name &&
+          student.name !== "Student";
+
+        setConfigured(Boolean(hasRealProfile));
+      } catch {
+        setConfigured(false);
+      } finally {
+        setChecking(false);
+      }
+    }
+
+    checkProfile();
+  }, []);
+
+  if (checking) {
+    return (
+      <main className="app">
+        <div className="card">
+          <h2>Loading StudyPilot...</h2>
+        </div>
+      </main>
+    );
+  }
+
+  if (!configured) {
+    return (
+      <Setup
+        onComplete={() => setConfigured(true)}
+      />
+    );
+  }
+
+  return <Dashboard />;
+}
+
+createRoot(
+  document.getElementById("root")
+).render(<App />);
